@@ -30,7 +30,7 @@ public class ServiceRequestService {
         req.setReservation(reservation);
         req.setPm(pm);
         req.setCreatedAt(LocalDateTime.now());
-        req.changeStatus(RequestStatus.OPEN);
+        req.changeStatus(RequestStatus.PENDING);
 
         synchronized (dataStore.getRequests()) {
             dataStore.getRequests().add(req);

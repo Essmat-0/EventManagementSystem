@@ -1,7 +1,7 @@
 package com.project.eventmanagment.models;
 
 import java.time.LocalDateTime;
-
+import com.project.eventmanagment.data.DataStore;
 public class ServiceOffer {
 
     private boolean accepted;
@@ -86,6 +86,7 @@ public class ServiceOffer {
                 + "offerID=" + offerID
                 + ", price=" + price
                 + ", accepted=" + accepted
+                + ", Request =" + request
                 + ", readyDate=" + readyDate
                 + ", provider=" + (provider != null ? provider.getProviderName(): "N/A")
                 + '}';

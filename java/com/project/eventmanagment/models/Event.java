@@ -10,13 +10,19 @@ public class Event {
     private int attendeesCount;
     private String location;
     private LocalDateTime date;
-
-    public Event(String title, String notes, int attendeesCount) {
+    
+    
+    
+    public Event(){}
+    public Event(int eventId,String title, String notes, int attendeesCount) {
+        this.eventId = eventId;
         this.title = title;
         this.notes = notes;
         this.attendeesCount = attendeesCount;
     }
 
+    
+    
     public int getEventId() {
         return eventId;
     }
@@ -37,7 +43,7 @@ public class Event {
         return date;
     }
 
-    public String getDetails() {
+    public String getLocation() {
         return location;
     }
 

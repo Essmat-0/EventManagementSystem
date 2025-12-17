@@ -4,7 +4,6 @@ package com.project.eventmanagment.services;
 import com.project.eventmanagment.data.DataStore;
 import com.project.eventmanagment.data.IDGenerator;
 import com.project.eventmanagment.models.Bill;
-import com.project.eventmanagment.models.BillItem;
 import com.project.eventmanagment.models.Reservation;
 import com.project.eventmanagment.models.ServiceOffer;
 import java.time.LocalDateTime;
@@ -27,7 +26,6 @@ public class BillingService {
     bill.setReservation(reservation);
     bill.setIssuedAt(LocalDateTime.now());
 
-    ArrayList<BillItem> items = new ArrayList<>();
     double total = 0;
 
     for (ServiceOffer offer : dataStore.getOffers()) {
@@ -36,17 +34,10 @@ public class BillingService {
             offer.getRequest().getReservation().getReservationId()
                 == reservation.getReservationId()) {
 
-            BillItem item = new BillItem(
-                    offer.getRequest().getDescription(),
-                    offer.getPrice()
-            );
-
-            items.add(item);
-            total += offer.getPrice();
+                  total += offer.getPrice();
         }
     }
 
-    bill.setItems(items);
     bill.setAmount(total);
     dataStore.getBills().add(bill);
 

@@ -20,6 +20,7 @@ public class AdminService {
 
     public void addUser(User user) {
         if (user == null) {
+            System.out.println("Cannot add null user");
             return;
         }
         if (user instanceof Customer) {
@@ -31,6 +32,8 @@ public class AdminService {
         } else if (user instanceof Admin) {
             dataStore.getAdmins().add((Admin) user);
         }
+        System.out.println("User added: " + user.getName());
+
     }
 
     public boolean updateUser(int userID, String name, String email, String phone) {
@@ -44,18 +47,23 @@ public class AdminService {
         user.setPhone(phone);
         return true;
     }
-
     public boolean deleteUser(int userID) {
-        User user = findUserById(userID);
-        if (user == null) {
-            return false;
-        }
-
-        return dataStore.getCustomers().remove((Customer) user)
-                || dataStore.getPms().remove((ProjectManager) user)
-                || dataStore.getProviders().remove((ServiceProvider) user)
-                || dataStore.getAdmins().remove((Admin) user);
+    User user = findUserById(userID);
+    if (user == null) {
+        return false;
     }
+    
+    if (user instanceof Customer) {
+        return dataStore.getCustomers().remove((Customer) user);
+    } else if (user instanceof ProjectManager) {
+        return dataStore.getPms().remove((ProjectManager) user);
+    } else if (user instanceof ServiceProvider) {
+        return dataStore.getProviders().remove((ServiceProvider) user);
+    } else if (user instanceof Admin) {
+        return dataStore.getAdmins().remove((Admin) user);
+    }
+    return false;
+}
 
     public boolean forwardRequestToPM(int requestID, int pmID) {
         ServiceRequest req = reqserv.findRequestById(requestID);

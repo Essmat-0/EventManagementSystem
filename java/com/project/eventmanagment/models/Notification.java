@@ -1,13 +1,5 @@
 package com.project.eventmanagment.models;
-
-public class Notification {
-
-    public enum NotificationType {
-    EMAIL,
-    SMS,
-    SYSTEM
-}
-
+import com.project.eventmanagment.models.enums.NotificationType;
 import java.time.LocalDateTime;
 
 public class Notification {
@@ -17,20 +9,18 @@ public class Notification {
     private NotificationType type;
     private String message;
     private LocalDateTime sentAt;
+    
 
-    // Default constructor
-    public Notification() {
-        this.sentAt = LocalDateTime.now();
-    }
 
     // Parameterized constructor
-    public Notification(int id, String to, NotificationType type, String message) {
-        this.id = id;
-        this.to = to;
-        this.type = type;
-        this.message = message;
-        this.sentAt = LocalDateTime.now();
-    }
+public Notification(int id, String to, NotificationType type, String message) {
+    this.id = id;
+    this.to = to;
+    this.type = type;
+    this.message = message;
+    this.sentAt = LocalDateTime.now();
+}
+
 
     // Setters
     public void setId(int id) {
@@ -71,17 +61,19 @@ public class Notification {
     }
 
     // Send notification
-    public void send() {
+    public boolean send() {
         System.out.println("Sending " + type + " to " + to);
         System.out.println("Message: " + message);
         System.out.println("Sent at: " + sentAt);
+        return true;
     }
 
     // Notification details
     public String getNotification() {
         return id + " | " + to + " | " + type + " | " + message + " | " + sentAt;
     }
-}
+
+
     
     @Override
     public String toString() {
@@ -93,7 +85,6 @@ public class Notification {
                 + ", sentAt=" + sentAt
                 + '}';
     }
-    
-    */
-
+   
 }
+

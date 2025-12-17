@@ -1,0 +1,2 @@
+1|Wedding Ceremony|null|150
+2|Corporate Meeting|null|50

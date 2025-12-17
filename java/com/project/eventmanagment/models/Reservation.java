@@ -34,6 +34,10 @@ public class Reservation {
         return reservationId;
     }
 
+    public ReservationStatus getStatus() {
+        return status;
+    }
+
     public LocalDateTime getDate() {
         return createdAt;
     }

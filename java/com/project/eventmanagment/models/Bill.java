@@ -9,16 +9,13 @@ private int billID;
 private Reservation reservation;
 private double amount;
 private LocalDateTime issuedAt;
-private ArrayList<BillItem> items = new ArrayList <>();
 
 public Bill(){}
 
-
-    public Bill(int billID, Reservation reservation, double amount, ArrayList<BillItem> items) {
+    public Bill(int billID, Reservation reservation, double amount) {
         this.billID = billID;
         this.reservation = reservation;
         this.amount = amount;
-        this.items = items;
     }
 
     public int getBillID() {
@@ -37,9 +34,7 @@ public Bill(){}
         return issuedAt;
     }
 
-    public ArrayList<BillItem> getItems() {
-        return items;
-    }
+
 
     public void setBillID(int billID) {
         this.billID = billID;
@@ -56,10 +51,6 @@ public Bill(){}
     public void setIssuedAt(LocalDateTime issuedAt) {
         this.issuedAt = issuedAt;
     }
-
-    public void setItems(ArrayList<BillItem> items) {
-        this.items = items;
-    }
     
     public double calculateTotal(){
         return 1;
@@ -75,7 +66,6 @@ public Bill(){}
                 + ", reservationID=" + (reservation != null ? reservation.getReservationId() : -1)
                 + ", amount=" + amount
                 + ", issuedAt=" + issuedAt
-                + ", itemsCount=" + (items != null ? items.size() : 0)
                 + '}';
     }
 }
