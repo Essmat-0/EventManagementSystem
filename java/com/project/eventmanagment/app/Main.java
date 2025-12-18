@@ -75,7 +75,7 @@ public class Main {
         System.out.println("TEST 1: LOGIN SYSTEM");
         System.out.println("========================================");
         
-        Login login = new Login(dataStore);
+        LoginService login = new LoginService(dataStore);
         
         // Test valid login
         Object user = login.authenticate("alice@email.com", "cust123");

@@ -1,18 +1,26 @@
-package com.project.eventmanagment.app;
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package com.project.eventmanagment.services;
 
 import com.project.eventmanagment.data.DataStore;
 import com.project.eventmanagment.data.FileHandler;
-import com.project.eventmanagment.models.*;
+import com.project.eventmanagment.models.Admin;
+import com.project.eventmanagment.models.Customer;
+import com.project.eventmanagment.models.ProjectManager;
+import com.project.eventmanagment.models.ServiceProvider;
+import com.project.eventmanagment.models.User;
 import java.util.Scanner;
 
 
-public class Login {
+public class LoginService {
     
     private DataStore dataStore;
     private Scanner scanner;
     private Object currentUser;
     
-    public Login(DataStore dataStore) {
+    public LoginService(DataStore dataStore) {
         this.dataStore = dataStore;
         this.scanner = new Scanner(System.in);
         this.currentUser = null;
@@ -201,7 +209,7 @@ public class Login {
         fileHandler.loadUsers(dataStore);
         
         // Create login instance
-        Login login = new Login(dataStore);
+        LoginService login = new LoginService(dataStore);
         
         // Perform login
         Object loggedInUser = login.performLogin();

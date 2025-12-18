@@ -1,4 +1,5 @@
 ADMIN|1|Admin User|admin@system.com|111|admin123
 PM|2|John PM|pm@system.com|222|pm123
 CUSTOMER|3|Alice Customer|alice@email.com|333|cust123
+CUSTOMER|4|ahmed|ahmed@email1.com|01153|123456
 PROVIDER|4|Best Catering Co|catering@email.com|444|prov123
