@@ -1,359 +1,596 @@
 package com.project.eventmanagment.app;
 
-import com.project.eventmanagment.data.DataStore;
-import com.project.eventmanagment.data.IDGenerator;
+import com.project.eventmanagment.data.*;
 import com.project.eventmanagment.models.*;
-import com.project.eventmanagment.models.enums.RequestStatus;
 import com.project.eventmanagment.services.*;
-import javax.swing.*;
+import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
 
-public class PMMenu extends JFrame {
-    
+public class PMMenu extends javax.swing.JFrame {
+
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(PMMenu.class.getName());
+
     private DataStore dataStore;
+    private FileHandler fileHandler;
     private ProjectManager pm;
     private PMService pmService;
     private IDGenerator idGen;
-    
-    private JTabbedPane tabbedPane;
-    
-    public PMMenu(DataStore dataStore, ProjectManager pm) {
-        this.dataStore = dataStore;
-        this.pm = pm;
-        this.idGen = new IDGenerator(dataStore);
-        
-        ServiceRequestService reqService = new ServiceRequestService(dataStore,idGen);
-        BillingService billService = new BillingService(dataStore, idGen);
-        this.pmService = new PMService(dataStore, reqService, billService, idGen, pm);
-        
+
+    public PMMenu() {
         initComponents();
     }
-    
+
+    public PMMenu(DataStore dataStore, ProjectManager pm) {
+        this.dataStore = dataStore;
+        this.fileHandler = new FileHandler();
+        this.pm = pm;
+        this.idGen = new IDGenerator(dataStore);
+
+        ServiceRequestService reqService = new ServiceRequestService(dataStore, idGen);
+        BillingService billService = new BillingService(dataStore, idGen);
+        this.pmService = new PMService(dataStore, reqService, billService, idGen, pm);
+
+        initComponents();
+        setupTables();
+        loadInitialData();
+    }
+
+    private void setupTables() {
+        // Setup  (My Requests)
+        String[] columns1 = {"ID", "Description", "Status", "Customer", "Provider"};
+        DefaultTableModel model1 = new DefaultTableModel(columns1, 0);
+        jTable1.setModel(model1);
+
+        // Setup  (Offers)
+        String[] columns2 = {"Offer ID", "Provider", "Price", "Ready Date", "Accepted"};
+        DefaultTableModel model2 = new DefaultTableModel(columns2, 0);
+        jTable2.setModel(model2);
+
+        // Setup  (Bills)
+        String[] columns3 = {"Bill ID", "Reservation ID", "Amount"};
+        DefaultTableModel model3 = new DefaultTableModel(columns3, 0);
+        jTable3.setModel(model3);
+    }
+
+    private void loadInitialData() {
+        loadMyRequests();
+        loadProviders();
+    }
+
+    private void loadMyRequests() {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
+
+        for (ServiceRequest req : pmService.getMyRequests()) {
+            model.addRow(new Object[]{
+                req.getRequestID(),
+                req.getDescription(),
+                req.getStatus(),
+                req.getReservation() != null ? req.getReservation().getCustomer().getName() : "N/A",
+                req.getAssignedTo() != null ? req.getAssignedTo().getProviderName() : "Not assigned"
+            });
+        }
+    }
+
+    private void loadProviders() {
+        ProviderBox.removeAllItems();
+        for (ServiceProvider provider : dataStore.getProviders()) {
+            ProviderBox.addItem(provider.getId() + " - " + provider.getProviderName());
+        }
+    }
+
+    private void loadOffers() {
+        try {
+            int reqId = Integer.parseInt(requestIdField.getText().trim());
+            DefaultTableModel model = (DefaultTableModel) jTable2.getModel();
+            model.setRowCount(0);
+
+            for (ServiceOffer offer : pmService.viewOffersForRequest(reqId)) {
+                model.addRow(new Object[]{
+                    offer.getOfferID(),
+                    offer.getProvider().getProviderName(),
+                    "$" + offer.getPrice(),
+                    offer.getReadyDate(),
+                    offer.isAccepted() ? "Yes" : "No"
+                });
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid Request ID");
+        }
+    }
+
+    private void loadBills() {
+        DefaultTableModel model = (DefaultTableModel) jTable3.getModel();
+        model.setRowCount(0);
+
+        for (Bill bill : pmService.getMyBills()) {
+            model.addRow(new Object[]{
+                bill.getBillID(),
+                bill.getReservation().getReservationId(),
+                "$" + bill.getAmount()
+            });
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
-        setTitle("Project Manager Menu - " + pm.getName());
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 600);
-        setLocationRelativeTo(null);
-        
-        tabbedPane = new JTabbedPane();
-        
-        tabbedPane.addTab("My Requests", createMyRequestsPanel());
-        tabbedPane.addTab("Forward Request", createForwardRequestPanel());
-        tabbedPane.addTab("Contact Customer", createContactCustomerPanel());
-        tabbedPane.addTab("View Offers", createViewOffersPanel());
-        tabbedPane.addTab("View Bills", createViewBillsPanel());
-        
-        add(tabbedPane);
-    }
-    
-    // ============================================================================
-    // MY REQUESTS PANEL
-    // ============================================================================
-    private JPanel createMyRequestsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("My Assigned Requests");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        String[] columns = {"ID", "Description", "Status", "Customer", "Provider"};
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
-        JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
-        
-        JButton refreshBtn = new JButton("Refresh");
-        JButton viewDetailsBtn = new JButton("View Details");
-        JButton updateStatusBtn = new JButton("Update Status");
-        
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        buttonPanel.add(refreshBtn);
-        buttonPanel.add(viewDetailsBtn);
-        buttonPanel.add(updateStatusBtn);
-        
-        refreshBtn.addActionListener(e -> {
-            model.setRowCount(0);
-            for (ServiceRequest req : pmService.getMyRequests()) {
-                model.addRow(new Object[]{
-                    req.getRequestID(),
-                    req.getDescription(),
-                    req.getStatus(),
-                    req.getReservation() != null ? req.getReservation().getCustomer().getName() : "N/A",
-                    req.getAssignedTo() != null ? req.getAssignedTo().getProviderName() : "Not assigned"
-                });
+
+        jPanel2 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        requestIdField = new javax.swing.JTextField();
+        jTabbedPane1 = new javax.swing.JTabbedPane();
+        jPanel1 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTable1 = new javax.swing.JTable();
+        jPanel6 = new javax.swing.JPanel();
+        jLabel2 = new javax.swing.JLabel();
+        forwardRequestIDField = new javax.swing.JTextField();
+        jLabel3 = new javax.swing.JLabel();
+        forwardRequestButton = new javax.swing.JButton();
+        ProviderBox = new javax.swing.JComboBox<>();
+        LoadProviders1 = new javax.swing.JButton();
+        jPanel3 = new javax.swing.JPanel();
+        contact_CustomerID = new javax.swing.JLabel();
+        CustomerIDfield = new javax.swing.JTextField();
+        MessageField = new javax.swing.JTextField();
+        Contact_Message = new javax.swing.JLabel();
+        SendMessageBtn = new javax.swing.JButton();
+        jPanel4 = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTable2 = new javax.swing.JTable();
+        ApproveOfferBtn = new javax.swing.JButton();
+        jPanel5 = new javax.swing.JPanel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jTable3 = new javax.swing.JTable();
+
+        jLabel1.setText("Request ID:");
+
+        requestIdField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                requestIdFieldActionPerformed(evt);
             }
         });
-        
-        viewDetailsBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row >= 0) {
-                int reqId = (int) model.getValueAt(row, 0);
-                ServiceRequest req = pmService.viewRequestDetails(reqId);
-                if (req != null) {
-                    String details = "Request ID: " + req.getRequestID() + "\n"
-                            + "Description: " + req.getDescription() + "\n"
-                            + "Status: " + req.getStatus() + "\n"
-                            + "Created: " + req.getDate() + "\n"
-                            + "Provider: " + (req.getAssignedTo() != null ? req.getAssignedTo().getProviderName() : "Not assigned");
-                    JOptionPane.showMessageDialog(this, details, "Request Details", JOptionPane.INFORMATION_MESSAGE);
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Please select a request");
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(18, 18, 18)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(requestIdField, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(352, Short.MAX_VALUE))
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(69, 69, 69)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(requestIdField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel1))
+                .addContainerGap(298, Short.MAX_VALUE))
+        );
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("PM DASHBOARD");
+
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null}
+            },
+            new String [] {
+                "ID", "Description", "Status", "Customer", "Provider"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.String.class, java.lang.Object.class, java.lang.Object.class, java.lang.Object.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
             }
         });
-        
-        updateStatusBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row >= 0) {
-                int reqId = (int) model.getValueAt(row, 0);
-                String[] statuses = {"PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"};
-                String status = (String) JOptionPane.showInputDialog(this, "Select new status:", 
-                        "Update Status", JOptionPane.QUESTION_MESSAGE, null, statuses, statuses[0]);
-                if (status != null) {
-                    pmService.updateRequestStatus(reqId, RequestStatus.valueOf(status));
-                    refreshBtn.doClick();
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Please select a request");
+        jScrollPane1.setViewportView(jTable1);
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 624, Short.MAX_VALUE)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 181, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("My Requests", jPanel1);
+
+        jLabel2.setText("Request ID");
+
+        forwardRequestIDField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                forwardRequestIDFieldActionPerformed(evt);
             }
         });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        return panel;
-    }
-    
-    // ============================================================================
-    // FORWARD REQUEST PANEL
-    // ============================================================================
-    private JPanel createForwardRequestPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("Forward Request to Provider");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-        
-        JLabel reqIdLabel = new JLabel("Request ID:");
-        JTextField reqIdField = new JTextField();
-        
-        JLabel providerLabel = new JLabel("Provider:");
-        JComboBox<String> providerCombo = new JComboBox<>();
-        
-        JButton loadProvidersBtn = new JButton("Load Providers");
-        JButton forwardBtn = new JButton("Forward Request");
-        
-        formPanel.add(reqIdLabel);
-        formPanel.add(reqIdField);
-        formPanel.add(providerLabel);
-        formPanel.add(providerCombo);
-        formPanel.add(loadProvidersBtn);
-        formPanel.add(forwardBtn);
-        
-        loadProvidersBtn.addActionListener(e -> {
-            providerCombo.removeAllItems();
-            for (ServiceProvider provider : dataStore.getProviders()) {
-                providerCombo.addItem(provider.getId() + " - " + provider.getProviderName());
+
+        jLabel3.setText("Provider: ");
+
+        forwardRequestButton.setText("Forward request");
+        forwardRequestButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                forwardRequestButtonActionPerformed(evt);
             }
         });
-        
-        forwardBtn.addActionListener(e -> {
-            try {
-                int reqId = Integer.parseInt(reqIdField.getText().trim());
-                String selected = (String) providerCombo.getSelectedItem();
-                if (selected != null) {
-                    int providerId = Integer.parseInt(selected.split(" - ")[0]);
-                    boolean success = pmService.forwardRequestToProvider(reqId, providerId);
-                    if (success) {
-                        JOptionPane.showMessageDialog(this, "Request forwarded successfully");
-                        reqIdField.setText("");
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Failed to forward request");
-                    }
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid Request ID");
+
+        ProviderBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        ProviderBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ProviderBoxActionPerformed(evt);
             }
         });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(formPanel, BorderLayout.CENTER);
-        
-        return panel;
-    }
-    
-    // ============================================================================
-    // CONTACT CUSTOMER PANEL
-    // ============================================================================
-    private JPanel createContactCustomerPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("Contact Customer");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        formPanel.add(new JLabel("Customer ID:"), gbc);
-        
-        gbc.gridx = 1;
-        JTextField customerIdField = new JTextField(20);
-        formPanel.add(customerIdField, gbc);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        formPanel.add(new JLabel("Message:"), gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        JTextArea messageArea = new JTextArea(5, 20);
-        JScrollPane msgScroll = new JScrollPane(messageArea);
-        formPanel.add(msgScroll, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        JButton sendBtn = new JButton("Send Message");
-        formPanel.add(sendBtn, gbc);
-        
-        sendBtn.addActionListener(e -> {
-            try {
-                int customerId = Integer.parseInt(customerIdField.getText().trim());
-                String message = messageArea.getText().trim();
-                
-                if (message.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Please enter a message");
-                    return;
-                }
-                
-                boolean success = pmService.contactCustomer(customerId, message);
+
+        LoadProviders1.setText("LoadProviders");
+        LoadProviders1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                LoadProviders1ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
+        jPanel6.setLayout(jPanel6Layout);
+        jPanel6Layout.setHorizontalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 134, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 200, Short.MAX_VALUE)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(forwardRequestIDField)
+                    .addComponent(ProviderBox, 0, 136, Short.MAX_VALUE))
+                .addGap(148, 148, 148))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(forwardRequestButton, javax.swing.GroupLayout.PREFERRED_SIZE, 126, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(125, 125, 125))
+            .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel6Layout.createSequentialGroup()
+                    .addGap(48, 48, 48)
+                    .addComponent(LoadProviders1, javax.swing.GroupLayout.PREFERRED_SIZE, 126, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addContainerGap(450, Short.MAX_VALUE)))
+        );
+        jPanel6Layout.setVerticalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addGap(29, 29, 29)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel2)
+                    .addComponent(forwardRequestIDField, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(40, 40, 40)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(ProviderBox, javax.swing.GroupLayout.PREFERRED_SIZE, 87, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 75, Short.MAX_VALUE)
+                .addComponent(forwardRequestButton, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(43, 43, 43))
+            .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
+                    .addContainerGap(291, Short.MAX_VALUE)
+                    .addComponent(LoadProviders1, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGap(38, 38, 38)))
+        );
+
+        jTabbedPane1.addTab("Forward Request", jPanel6);
+
+        contact_CustomerID.setText("Customer ID");
+
+        Contact_Message.setText("Message");
+
+        SendMessageBtn.setText("Send");
+        SendMessageBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SendMessageBtnActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(132, 132, 132)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(contact_CustomerID, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(Contact_Message, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(65, 65, 65)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(CustomerIDfield, javax.swing.GroupLayout.PREFERRED_SIZE, 111, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(MessageField, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(229, 229, 229)
+                        .addComponent(SendMessageBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(178, Short.MAX_VALUE))
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(106, 106, 106)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(CustomerIDfield, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(contact_CustomerID))
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(95, 95, 95)
+                        .addComponent(Contact_Message))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(59, 59, 59)
+                        .addComponent(MessageField, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 51, Short.MAX_VALUE)
+                .addComponent(SendMessageBtn)
+                .addGap(23, 23, 23))
+        );
+
+        jTabbedPane1.addTab("Contact Customer", jPanel3);
+
+        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null}
+            },
+            new String [] {
+                "Offer ID", "Provider", "Price", "Ready Date", "Accepted"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.Object.class, java.lang.Double.class, java.lang.String.class, java.lang.Boolean.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+        });
+        jScrollPane2.setViewportView(jTable2);
+
+        ApproveOfferBtn.setText("Approve Offer");
+        ApproveOfferBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ApproveOfferBtnActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 624, Short.MAX_VALUE)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(273, 273, 273)
+                .addComponent(ApproveOfferBtn)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 103, Short.MAX_VALUE)
+                .addComponent(ApproveOfferBtn)
+                .addGap(31, 31, 31))
+        );
+
+        jTabbedPane1.addTab("View offers", jPanel4);
+
+        jTable3.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null},
+                {null, null, null},
+                {null, null, null},
+                {null, null, null}
+            },
+            new String [] {
+                "Bill ID", "Reservation ID", "Amount"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+        });
+        jScrollPane3.setViewportView(jTable3);
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 624, Short.MAX_VALUE)
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 359, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(74, 74, 74))
+        );
+
+        jTabbedPane1.addTab("View Bills", jPanel5);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 624, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 12, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGap(0, 12, Short.MAX_VALUE)
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 424, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void requestIdFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_requestIdFieldActionPerformed
+        loadOffers();
+    }//GEN-LAST:event_requestIdFieldActionPerformed
+
+    private void forwardRequestIDFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_forwardRequestIDFieldActionPerformed
+        forwardRequestButtonActionPerformed(evt);
+    }//GEN-LAST:event_forwardRequestIDFieldActionPerformed
+
+    private void ProviderBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ProviderBoxActionPerformed
+    }//GEN-LAST:event_ProviderBoxActionPerformed
+
+    private void forwardRequestButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_forwardRequestButtonActionPerformed
+try {
+            int reqId = Integer.parseInt(forwardRequestIDField.getText().trim());
+            String selected = (String) ProviderBox.getSelectedItem();
+
+            if (selected != null) {
+                int providerId = Integer.parseInt(selected.split(" - ")[0]);
+                boolean success = pmService.forwardRequestToProvider(reqId, providerId);
+
                 if (success) {
-                    JOptionPane.showMessageDialog(this, "Message sent successfully");
-                    customerIdField.setText("");
-                    messageArea.setText("");
+                    fileHandler.saveRequests(dataStore);
+                    JOptionPane.showMessageDialog(this, "Request forwarded successfully");
+                    forwardRequestIDField.setText("");
+                    loadMyRequests();
                 } else {
-                    JOptionPane.showMessageDialog(this, "Failed to send message");
+                    JOptionPane.showMessageDialog(this, "Failed to forward request");
                 }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid Customer ID");
             }
-        });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(formPanel, BorderLayout.CENTER);
-        
-        return panel;
-    }
-    
-    // ============================================================================
-    // VIEW OFFERS PANEL
-    // ============================================================================
-    private JPanel createViewOffersPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("View Offers for Request");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        JPanel topPanel = new JPanel(new FlowLayout());
-        JLabel reqLabel = new JLabel("Request ID:");
-        JTextField reqIdField = new JTextField(10);
-        JButton loadBtn = new JButton("Load Offers");
-        
-        topPanel.add(reqLabel);
-        topPanel.add(reqIdField);
-        topPanel.add(loadBtn);
-        
-        String[] columns = {"Offer ID", "Provider", "Price", "Ready Date", "Accepted"};
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
-        JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
-        
-        JButton approveBtn = new JButton("Approve Offer");
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(approveBtn);
-        
-        loadBtn.addActionListener(e -> {
-            try {
-                int reqId = Integer.parseInt(reqIdField.getText().trim());
-                model.setRowCount(0);
-                for (ServiceOffer offer : pmService.viewOffersForRequest(reqId)) {
-                    model.addRow(new Object[]{
-                        offer.getOfferID(),
-                        offer.getProvider().getProviderName(),
-                        "$" + offer.getPrice(),
-                        offer.getReadyDate(),
-                        offer.isAccepted() ? "Yes" : "No"
-                    });
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid Request ID");
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid Request ID");
+        }    }//GEN-LAST:event_forwardRequestButtonActionPerformed
+
+    private void LoadProviders1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LoadProviders1ActionPerformed
+ loadProviders();
+    }//GEN-LAST:event_LoadProviders1ActionPerformed
+
+    private void SendMessageBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SendMessageBtnActionPerformed
+try {
+            int customerId = Integer.parseInt(CustomerIDfield.getText().trim());
+            String message = MessageField.getText().trim();
+
+            if (message.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter a message");
+                return;
             }
-        });
-        
-        approveBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row >= 0) {
-                int offerId = (int) model.getValueAt(row, 0);
-                boolean success = pmService.approveOffer(offerId);
-                if (success) {
-                    JOptionPane.showMessageDialog(this, "Offer approved");
-                    loadBtn.doClick();
-                }
+
+            boolean success = pmService.contactCustomer(customerId, message);
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Message sent successfully");
+                CustomerIDfield.setText("");
+                MessageField.setText("");
             } else {
-                JOptionPane.showMessageDialog(this, "Please select an offer");
+                JOptionPane.showMessageDialog(this, "Failed to send message");
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid Customer ID");
+        }    }//GEN-LAST:event_SendMessageBtnActionPerformed
+
+    private void ApproveOfferBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ApproveOfferBtnActionPerformed
+int row = jTable2.getSelectedRow();
+        if (row >= 0) {
+            DefaultTableModel model = (DefaultTableModel) jTable2.getModel();
+            int offerId = (int) model.getValueAt(row, 0);
+
+            boolean success = pmService.approveOffer(offerId);
+            if (success) {
+                fileHandler.saveOffers(dataStore);
+                JOptionPane.showMessageDialog(this, "Offer approved");
+                loadOffers();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select an offer");
+        }    }//GEN-LAST:event_ApproveOfferBtnActionPerformed
+
+
+
+
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        
+        // Modified to load data
+        java.awt.EventQueue.invokeLater(() -> {
+            DataStore dataStore = new DataStore();
+            FileHandler fileHandler = new FileHandler();
+            fileHandler.loadUsers(dataStore);
+            fileHandler.loadEvents(dataStore);
+            fileHandler.loadReservations(dataStore);
+            fileHandler.loadRequests(dataStore);
+            fileHandler.loadOffers(dataStore);
+            fileHandler.loadBills(dataStore);
+            
+            // Use first PM for testing
+            if (!dataStore.getPms().isEmpty()) {
+                new PMMenu(dataStore, dataStore.getPms().get(0)).setVisible(true);
+            } else {
+                System.out.println("No PMs found in data!");
             }
         });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(topPanel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        return panel;
     }
-    
-    // ============================================================================
-    // VIEW BILLS PANEL
-    // ============================================================================
-    private JPanel createViewBillsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("View Bills");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        String[] columns = {"Bill ID", "Reservation ID", "Amount"};
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
-        JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
-        
-        JButton refreshBtn = new JButton("Refresh");
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(refreshBtn);
-        
-        refreshBtn.addActionListener(e -> {
-            model.setRowCount(0);
-            for (Bill bill : pmService.getMyBills()) {
-                model.addRow(new Object[]{
-                    bill.getBillID(),
-                    bill.getReservation().getReservationId(),
-                    "$" + bill.getAmount()
-                });
-            }
-        });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        return panel;
-    }
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton ApproveOfferBtn;
+    private javax.swing.JLabel Contact_Message;
+    private javax.swing.JTextField CustomerIDfield;
+    private javax.swing.JButton LoadProviders1;
+    private javax.swing.JTextField MessageField;
+    private javax.swing.JComboBox<String> ProviderBox;
+    private javax.swing.JButton SendMessageBtn;
+    private javax.swing.JLabel contact_CustomerID;
+    private javax.swing.JButton forwardRequestButton;
+    private javax.swing.JTextField forwardRequestIDField;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanel6;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JTable jTable1;
+    private javax.swing.JTable jTable2;
+    private javax.swing.JTable jTable3;
+    private javax.swing.JTextField requestIdField;
+    // End of variables declaration//GEN-END:variables
 }

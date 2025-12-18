@@ -1,26 +1,34 @@
+
 package com.project.eventmanagment.app;
 
 import com.project.eventmanagment.data.DataStore;
+import com.project.eventmanagment.data.FileHandler;
 import com.project.eventmanagment.data.IDGenerator;
 import com.project.eventmanagment.models.*;
 import com.project.eventmanagment.services.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
-public class ProviderMenu extends JFrame {
+public class ProviderMenu extends javax.swing.JFrame {
+    
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ProviderMenu.class.getName());
+
     
     private DataStore dataStore;
+    private FileHandler fileHandler;
     private ServiceProvider provider;
     private ProviderService providerService;
     private IDGenerator idGen;
     
-    private JTabbedPane tabbedPane;
+    public ProviderMenu() {
+        initComponents();
+    }
     
+    // Add constructor with parameters
     public ProviderMenu(DataStore dataStore, ServiceProvider provider) {
         this.dataStore = dataStore;
+        this.fileHandler = new FileHandler();
         this.provider = provider;
         this.idGen = new IDGenerator(dataStore);
         
@@ -29,277 +37,438 @@ public class ProviderMenu extends JFrame {
         this.providerService = new ProviderService(dataStore, idGen, reqService, offerService);
         
         initComponents();
+        setupTable();
+        loadInitialData();
     }
     
-    private void initComponents() {
-        setTitle("Service Provider Menu - " + provider.getProviderName());
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 600);
-        setLocationRelativeTo(null);
-        
-        tabbedPane = new JTabbedPane();
-        
-        tabbedPane.addTab("Assigned Requests", createAssignedRequestsPanel());
-        tabbedPane.addTab("Submit Offer", createSubmitOfferPanel());
-        tabbedPane.addTab("Complete Service", createCompleteServicePanel());
-        tabbedPane.addTab("Create Bill", createCreateBillPanel());
-        tabbedPane.addTab("View Bills", createViewBillsPanel());
-        
-        add(tabbedPane);
-    }
-    
-    // ============================================================================
-    // ASSIGNED REQUESTS PANEL
-    // ============================================================================
-    private JPanel createAssignedRequestsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("My Assigned Requests");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
+    private void setupTable() {
+        // Setup jTable1 (Assigned Requests)
         String[] columns = {"Request ID", "Description", "Status", "Customer", "Reservation"};
         DefaultTableModel model = new DefaultTableModel(columns, 0);
-        JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
-        
-        JButton refreshBtn = new JButton("Refresh");
-        
-        refreshBtn.addActionListener(e -> {
-            model.setRowCount(0);
-            for (ServiceRequest req : providerService.viewAssignedRequests(provider)) {
-                model.addRow(new Object[]{
-                    req.getRequestID(),
-                    req.getDescription(),
-                    req.getStatus(),
-                    req.getReservation() != null ? req.getReservation().getCustomer().getName() : "N/A",
-                    req.getReservation() != null ? req.getReservation().getReservationNumber() : "N/A"
-                });
-            }
-        });
-        
-        // Initial load
-        refreshBtn.doClick();
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(refreshBtn, BorderLayout.SOUTH);
-        
-        return panel;
+        jTable1.setModel(model);
     }
     
-    // ============================================================================
-    // SUBMIT OFFER PANEL
-    // ============================================================================
-    private JPanel createSubmitOfferPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("Submit Offer for Request");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
-        
-        JLabel reqIdLabel = new JLabel("Request ID:");
-        JTextField reqIdField = new JTextField();
-        
-        JLabel priceLabel = new JLabel("Price ($):");
-        JTextField priceField = new JTextField();
-        
-        JLabel daysLabel = new JLabel("Days Until Ready:");
-        JTextField daysField = new JTextField();
-        
-        JButton submitBtn = new JButton("Submit Offer");
-        
-        formPanel.add(reqIdLabel);
-        formPanel.add(reqIdField);
-        formPanel.add(priceLabel);
-        formPanel.add(priceField);
-        formPanel.add(daysLabel);
-        formPanel.add(daysField);
-        formPanel.add(new JLabel(""));
-        formPanel.add(submitBtn);
-        
-        submitBtn.addActionListener(e -> {
-            try {
-                int reqId = Integer.parseInt(reqIdField.getText().trim());
-                double price = Double.parseDouble(priceField.getText().trim());
-                int days = Integer.parseInt(daysField.getText().trim());
-                
-                LocalDateTime readyDate = LocalDateTime.now().plusDays(days);
-                
-                ServiceOffer offer = providerService.submitOffer(reqId, price, readyDate, provider);
-                
-                if (offer != null) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Offer submitted successfully!\nOffer ID: " + offer.getOfferID());
-                    reqIdField.setText("");
-                    priceField.setText("");
-                    daysField.setText("");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Failed to submit offer");
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Please enter valid numbers");
-            }
-        });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(formPanel, BorderLayout.CENTER);
-        
-        return panel;
+    private void loadInitialData() {
+        loadAssignedRequests();
     }
     
-    // ============================================================================
-    // COMPLETE SERVICE PANEL
-    // ============================================================================
-    private JPanel createCompleteServicePanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    private void loadAssignedRequests() {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
         
-        JLabel title = new JLabel("Complete Service Request");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        JPanel formPanel = new JPanel(new GridLayout(2, 2, 10, 10));
-        
-        JLabel reqIdLabel = new JLabel("Request ID:");
-        JTextField reqIdField = new JTextField();
-        
-        JButton completeBtn = new JButton("Mark as Completed");
-        
-        formPanel.add(reqIdLabel);
-        formPanel.add(reqIdField);
-        formPanel.add(new JLabel(""));
-        formPanel.add(completeBtn);
-        
-        completeBtn.addActionListener(e -> {
-            try {
-                int reqId = Integer.parseInt(reqIdField.getText().trim());
-                
-                boolean success = providerService.completeService(reqId, provider);
-                
-                if (success) {
-                    JOptionPane.showMessageDialog(this, "Service marked as completed!");
-                    reqIdField.setText("");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Failed to complete service");
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Please enter a valid Request ID");
+        for (ServiceRequest req : providerService.viewAssignedRequests(provider)) {
+            model.addRow(new Object[]{
+                req.getRequestID(),
+                req.getDescription(),
+                req.getStatus(),
+                req.getReservation() != null ? req.getReservation().getCustomer().getName() : "N/A",
+                req.getReservation() != null ? req.getReservation().getReservationNumber() : "N/A"
+            });
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jPanel5 = new javax.swing.JPanel();
+        jTabbedPane1 = new javax.swing.JTabbedPane();
+        jPanel1 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTable1 = new javax.swing.JTable();
+        jPanel2 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        PriceField = new javax.swing.JTextField();
+        RequestIdField = new javax.swing.JTextField();
+        ReadyDateField = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        submitOfferBtn = new javax.swing.JButton();
+        jPanel3 = new javax.swing.JPanel();
+        jLabel4 = new javax.swing.JLabel();
+        complete_requestIdField = new javax.swing.JTextField();
+        markCompleteBtn = new javax.swing.JButton();
+        jPanel4 = new javax.swing.JPanel();
+        jLabel5 = new javax.swing.JLabel();
+        bill_amountField = new javax.swing.JTextField();
+        jLabel6 = new javax.swing.JLabel();
+        bill_requestIdField1 = new javax.swing.JTextField();
+        createBillBtn = new javax.swing.JButton();
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 487, Short.MAX_VALUE)
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 335, Short.MAX_VALUE)
+        );
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("SP DASHBOARD");
+
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null}
+            },
+            new String [] {
+                "Request ID", "Description", "Status", "Customer", "Reservation"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.String.class, java.lang.Object.class, java.lang.Object.class, java.lang.Object.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
             }
         });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(formPanel, BorderLayout.CENTER);
-        
-        return panel;
-    }
-    
-    // ============================================================================
-    // CREATE BILL PANEL
-    // ============================================================================
-    private JPanel createCreateBillPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("Create Bill for Request");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-        
-        JLabel reqIdLabel = new JLabel("Request ID:");
-        JTextField reqIdField = new JTextField();
-        
-        JLabel amountLabel = new JLabel("Amount ($):");
-        JTextField amountField = new JTextField();
-        
-        JButton createBtn = new JButton("Create Bill");
-        
-        formPanel.add(reqIdLabel);
-        formPanel.add(reqIdField);
-        formPanel.add(amountLabel);
-        formPanel.add(amountField);
-        formPanel.add(new JLabel(""));
-        formPanel.add(createBtn);
-        
-        createBtn.addActionListener(e -> {
-            try {
-                int reqId = Integer.parseInt(reqIdField.getText().trim());
-                double amount = Double.parseDouble(amountField.getText().trim());
-                
-                Bill bill = providerService.createBill(reqId, amount, provider);
-                
-                if (bill != null) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Bill created successfully!\nBill ID: " + bill.getBillID() + 
-                        "\nAmount: $" + bill.getAmount());
-                    reqIdField.setText("");
-                    amountField.setText("");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Failed to create bill");
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Please enter valid numbers");
+        jScrollPane1.setViewportView(jTable1);
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 593, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 167, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("Assigned Requests", jPanel1);
+
+        jLabel1.setText("Request ID");
+
+        PriceField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PriceFieldActionPerformed(evt);
             }
         });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(formPanel, BorderLayout.CENTER);
-        
-        return panel;
-    }
-    
-    // ============================================================================
-    // VIEW BILLS PANEL
-    // ============================================================================
-    private JPanel createViewBillsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("View Bill by Reservation");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        JPanel topPanel = new JPanel(new FlowLayout());
-        JLabel resIdLabel = new JLabel("Reservation ID:");
-        JTextField resIdField = new JTextField(15);
-        JButton searchBtn = new JButton("Search");
-        
-        topPanel.add(resIdLabel);
-        topPanel.add(resIdField);
-        topPanel.add(searchBtn);
-        
-        JTextArea resultArea = new JTextArea(10, 40);
-        resultArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(resultArea);
-        
-        searchBtn.addActionListener(e -> {
-            try {
-                int resId = Integer.parseInt(resIdField.getText().trim());
-                
-                Bill bill = providerService.viewBill(resId);
-                
-                if (bill != null) {
-                    resultArea.setText(
-                        "========== BILL DETAILS ==========\n" +
-                        "Bill ID: " + bill.getBillID() + "\n" +
-                        "Reservation ID: " + bill.getReservation().getReservationId() + "\n" +
-                        "Reservation Number: " + bill.getReservation().getReservationNumber() + "\n" +
-                        "Customer: " + bill.getReservation().getCustomer().getName() + "\n" +
-                        "Amount: $" + bill.getAmount() + "\n" +
-                        "=================================="
-                    );
-                } else {
-                    resultArea.setText("No bill found for Reservation ID: " + resId);
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Please enter a valid Reservation ID");
+
+        RequestIdField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RequestIdFieldActionPerformed(evt);
             }
         });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(topPanel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        
-        return panel;
-    }
+
+        ReadyDateField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ReadyDateFieldActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setText("Price:");
+
+        jLabel3.setText("ReadyDate");
+
+        submitOfferBtn.setText("Submit Offer ");
+        submitOfferBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                submitOfferBtnActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(ReadyDateField, javax.swing.GroupLayout.PREFERRED_SIZE, 116, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(PriceField, javax.swing.GroupLayout.PREFERRED_SIZE, 116, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(RequestIdField, javax.swing.GroupLayout.PREFERRED_SIZE, 116, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(15, 15, 15))
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(173, 173, 173)
+                .addComponent(submitOfferBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(296, Short.MAX_VALUE))
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(76, 76, 76)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel1)
+                    .addComponent(RequestIdField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(44, 44, 44)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(PriceField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2))
+                .addGap(40, 40, 40)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(ReadyDateField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel3))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 87, Short.MAX_VALUE)
+                .addComponent(submitOfferBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(19, 19, 19))
+        );
+
+        jTabbedPane1.addTab("Submit Offer", jPanel2);
+
+        jLabel4.setText("Request ID");
+
+        markCompleteBtn.setText("Mark as Completed");
+        markCompleteBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                markCompleteBtnActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addGap(26, 26, 26)
+                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 293, Short.MAX_VALUE)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(markCompleteBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(complete_requestIdField))
+                .addGap(55, 55, 55))
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(86, 86, 86)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 72, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(complete_requestIdField, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 105, Short.MAX_VALUE)
+                .addComponent(markCompleteBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(27, 27, 27))
+        );
+
+        jTabbedPane1.addTab("Complete Service", jPanel3);
+
+        jLabel5.setText("Request ID:");
+
+        jLabel6.setText("Amount$ :");
+
+        createBillBtn.setText("Create Bill");
+        createBillBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                createBillBtnActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(41, 41, 41)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(bill_requestIdField1, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(bill_amountField, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(25, 25, 25))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
+                .addContainerGap(276, Short.MAX_VALUE)
+                .addComponent(createBillBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(222, 222, 222))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(75, 75, 75)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel5)
+                    .addComponent(bill_requestIdField1, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(64, 64, 64)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(bill_amountField, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 85, Short.MAX_VALUE)
+                .addComponent(createBillBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(24, 24, 24))
+        );
+
+        jTabbedPane1.addTab("Create BIll", jPanel4);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 599, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 19, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 402, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 22, Short.MAX_VALUE))
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void PriceFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PriceFieldActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_PriceFieldActionPerformed
+
+    private void RequestIdFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RequestIdFieldActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_RequestIdFieldActionPerformed
+
+    private void ReadyDateFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ReadyDateFieldActionPerformed
+        submitOfferBtnActionPerformed(evt);
+    }//GEN-LAST:event_ReadyDateFieldActionPerformed
+
+    private void submitOfferBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_submitOfferBtnActionPerformed
+ try {
+            int reqId = Integer.parseInt(RequestIdField.getText().trim());
+            double price = Double.parseDouble(PriceField.getText().trim());
+            int days = Integer.parseInt(ReadyDateField.getText().trim());
+            
+            LocalDateTime readyDate = LocalDateTime.now().plusDays(days);
+            
+            ServiceOffer offer = providerService.submitOffer(reqId, price, readyDate, provider);
+            
+            if (offer != null) {
+                fileHandler.saveOffers(dataStore);
+                JOptionPane.showMessageDialog(this, 
+                    "Offer submitted successfully!\nOffer ID: " + offer.getOfferID());
+                RequestIdField.setText("");
+                PriceField.setText("");
+                ReadyDateField.setText("");
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to submit offer");
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Please enter valid numbers");
+        }    }//GEN-LAST:event_submitOfferBtnActionPerformed
+
+    private void markCompleteBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_markCompleteBtnActionPerformed
+ try {
+            int reqId = Integer.parseInt(complete_requestIdField.getText().trim());
+            
+            boolean success = providerService.completeService(reqId, provider);
+            
+            if (success) {
+                fileHandler.saveRequests(dataStore);
+                JOptionPane.showMessageDialog(this, "Service marked as completed!");
+                complete_requestIdField.setText("");
+                loadAssignedRequests();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to complete service");
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid Request ID");
+        }    }//GEN-LAST:event_markCompleteBtnActionPerformed
+
+    private void createBillBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_createBillBtnActionPerformed
+         try {
+            int reqId = Integer.parseInt(bill_requestIdField1.getText().trim());
+            double amount = Double.parseDouble(bill_amountField.getText().trim());
+            
+            Bill bill = providerService.createBill(reqId, amount, provider);
+            
+            if (bill != null) {
+                fileHandler.saveBills(dataStore);
+                JOptionPane.showMessageDialog(this, 
+                    "Bill created successfully!\nBill ID: " + bill.getBillID() + 
+                    "\nAmount: $" + bill.getAmount());
+                bill_requestIdField1.setText("");
+                bill_amountField.setText("");
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to create bill");
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Please enter valid numbers");
+        }
+    }//GEN-LAST:event_createBillBtnActionPerformed
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+ java.awt.EventQueue.invokeLater(() -> {
+            DataStore dataStore = new DataStore();
+            FileHandler fileHandler = new FileHandler();
+            fileHandler.loadUsers(dataStore);
+            fileHandler.loadEvents(dataStore);
+            fileHandler.loadReservations(dataStore);
+            fileHandler.loadRequests(dataStore);
+            fileHandler.loadOffers(dataStore);
+            fileHandler.loadBills(dataStore);
+            
+            // Use first Provider for testing
+            if (!dataStore.getProviders().isEmpty()) {
+                new ProviderMenu(dataStore, dataStore.getProviders().get(0)).setVisible(true);
+            } else {
+                System.out.println("No Providers found in data!");
+            }
+        });    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTextField PriceField;
+    private javax.swing.JTextField ReadyDateField;
+    private javax.swing.JTextField RequestIdField;
+    private javax.swing.JTextField bill_amountField;
+    private javax.swing.JTextField bill_requestIdField1;
+    private javax.swing.JTextField complete_requestIdField;
+    private javax.swing.JButton createBillBtn;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JTable jTable1;
+    private javax.swing.JButton markCompleteBtn;
+    private javax.swing.JButton submitOfferBtn;
+    // End of variables declaration//GEN-END:variables
 }

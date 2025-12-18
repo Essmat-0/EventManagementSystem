@@ -1,8 +1,6 @@
 package com.project.eventmanagment.app;
 
-import com.project.eventmanagment.data.DataStore;
-import com.project.eventmanagment.data.IDGenerator;
-import com.project.eventmanagment.data.FileHandler;
+import com.project.eventmanagment.data.*;
 
 import com.project.eventmanagment.models.*;
 import com.project.eventmanagment.services.*;
@@ -10,352 +8,614 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 
-public class CustomerMenu extends JFrame {
-    
+public class CustomerMenu extends javax.swing.JFrame {
+
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(CustomerMenu.class.getName());
+
     private DataStore dataStore;
+    private FileHandler fileHandler;
     private Customer customer;
     private CustomerService customerService;
     private IDGenerator idGen;
-    private FileHandler fileHandler;
-    private JTabbedPane tabbedPane;
-    
+
+    public CustomerMenu() {
+        initComponents();
+        refreshReservationsTable();
+    }
+
     public CustomerMenu(DataStore dataStore, Customer customer) {
         this.dataStore = dataStore;
         this.customer = customer;
+        this.fileHandler = new FileHandler();
         this.idGen = new IDGenerator(dataStore);
-        
-        ReservationService resService = new ReservationService(dataStore, idGen);
-        this.customerService = new CustomerService(dataStore, resService, idGen, customer);
-        
+
+        ReservationService resService
+                = new ReservationService(dataStore, idGen);
+
+        this.customerService
+                = new CustomerService(dataStore, resService, idGen, customer);
+
         initComponents();
-    }
-    
-    private void initComponents() {
         setTitle("Customer Menu - " + customer.getName());
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 600);
-        setLocationRelativeTo(null);
-        
-        tabbedPane = new JTabbedPane();
-        
-        tabbedPane.addTab("Create Event", createEventPanel());
-        tabbedPane.addTab("Book Event", createBookEventPanel());
-        tabbedPane.addTab("My Reservations", createMyReservationsPanel());
-        tabbedPane.addTab("Contact PM", createContactPMPanel());
-        tabbedPane.addTab("My Requests", createMyRequestsPanel());
-        
-        add(tabbedPane);
     }
-    
-    // ============================================================================
-    // CREATE EVENT PANEL
-    // ============================================================================
-    private JPanel createEventPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("Create New Event");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
-        
-        JLabel titleLabel = new JLabel("Event Title:");
-        JTextField titleField = new JTextField();
-        
-        JLabel locationLabel = new JLabel("Location:");
-        JTextField locationField = new JTextField();
-        
-        JLabel attendeesLabel = new JLabel("Attendees Count:");
-        JTextField attendeesField = new JTextField();
-        
-        JButton createBtn = new JButton("Create Event");
-        
-        formPanel.add(titleLabel);
-        formPanel.add(titleField);
-        formPanel.add(locationLabel);
-        formPanel.add(locationField);
-        formPanel.add(attendeesLabel);
-        formPanel.add(attendeesField);
-        formPanel.add(new JLabel(""));
-        formPanel.add(createBtn);
-        
-        createBtn.addActionListener(e -> {
-            try {
-                String eventTitle = titleField.getText().trim();
-                String location = locationField.getText().trim();
-                int attendees = Integer.parseInt(attendeesField.getText().trim());
-                
-                if (eventTitle.isEmpty() || location.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Please fill all fields");
-                    return;
-                }
-                
-                com.project.eventmanagment.models.Event event = customerService.createEvent(eventTitle, location, attendees);
-                if (event != null) {
-                    JOptionPane.showMessageDialog(this, "Event created successfully!");
-                    titleField.setText("");
-                    locationField.setText("");
-                    attendeesField.setText("");
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid attendees count");
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jTabbedPane4 = new javax.swing.JTabbedPane();
+        jLabel1 = new javax.swing.JLabel();
+        jTabbedPane1 = new javax.swing.JTabbedPane();
+        jPanel1 = new javax.swing.JPanel();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        AttendeesCountField = new javax.swing.JTextField();
+        EventLocationField = new javax.swing.JTextField();
+        EventTitleField2 = new javax.swing.JTextField();
+        CreateEventBtn = new javax.swing.JButton();
+        jPanel2 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTable1 = new javax.swing.JTable();
+        BookSelectedEventBtn = new javax.swing.JButton();
+        RefreshEventBtn = new javax.swing.JButton();
+        jPanel3 = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTable2 = new javax.swing.JTable();
+        cancelResBtn = new javax.swing.JButton();
+        resRefreshBtn = new javax.swing.JButton();
+        jPanel4 = new javax.swing.JPanel();
+        jLabel5 = new javax.swing.JLabel();
+        PmIDField = new javax.swing.JTextField();
+        jLabel6 = new javax.swing.JLabel();
+        messageField = new javax.swing.JTextField();
+        sendMessageBtn = new javax.swing.JButton();
+        jPanel5 = new javax.swing.JPanel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jTable3 = new javax.swing.JTable();
+        RefreshRequestsBtn = new javax.swing.JButton();
+
+        jLabel1.setText("jLabel1");
+        jTabbedPane4.addTab("tab1", jLabel1);
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("CUSTOMER DASHBOARD");
+
+        jLabel2.setText("Event Title");
+
+        jLabel3.setText("Event Location");
+
+        jLabel4.setText("Attendees Count");
+
+        EventLocationField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                EventLocationFieldActionPerformed(evt);
             }
         });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(formPanel, BorderLayout.CENTER);
-        fileHandler.saveEvents(dataStore);
-        return panel;
-    }
-    
-    // ============================================================================
-    // BOOK EVENT PANEL
-    // ============================================================================
-    private JPanel createBookEventPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("Available Events");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        String[] columns = {"Event ID", "Title", "Location", "Attendees"};
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
-        JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
-        
-        JButton refreshBtn = new JButton("Refresh");
-        JButton bookBtn = new JButton("Book Selected Event");
-        
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(refreshBtn);
-        buttonPanel.add(bookBtn);
-        
-        // Load events
-        refreshBtn.addActionListener(e -> {
-            model.setRowCount(0);
-            for (com.project.eventmanagment.models.Event event : dataStore.getEvents()) {
-                model.addRow(new Object[]{
-                    event.getEventId(),
-                    event.getTitle(),
-                    event.getLocation(),
-                    event.getAttendeesCount()
-                });
+
+        CreateEventBtn.setText("Create Event");
+        CreateEventBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                CreateEventBtnActionPerformed(evt);
             }
         });
-        
-        // Initial load
-        refreshBtn.doClick();
-        
-        bookBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row >= 0) {
-                int eventId = (int) model.getValueAt(row, 0);
-                com.project.eventmanagment.models.Event event = dataStore.findEventById(eventId);
-                
-                Reservation res = customerService.bookEvent(event);
-                if (res != null) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Event booked successfully!\nReservation: " + res.getReservationNumber());
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Please select an event");
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(30, 30, 30)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 255, Short.MAX_VALUE)
+                        .addComponent(AttendeesCountField, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 80, Short.MAX_VALUE)
+                            .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(EventLocationField, javax.swing.GroupLayout.DEFAULT_SIZE, 149, Short.MAX_VALUE)
+                            .addComponent(EventTitleField2))))
+                .addGap(62, 62, 62))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(207, 207, 207)
+                .addComponent(CreateEventBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 115, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(75, 75, 75)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel2)
+                    .addComponent(EventTitleField2, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(56, 56, 56)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel3)
+                    .addComponent(EventLocationField, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(67, 67, 67)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(AttendeesCountField, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 126, Short.MAX_VALUE)
+                .addComponent(CreateEventBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+
+        jTabbedPane1.addTab("Create Event", jPanel1);
+
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Event ID", "Title", "Location", "Attendees"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
             }
         });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        return panel;
-    }
-    
-    // ============================================================================
-    // MY RESERVATIONS PANEL
-    // ============================================================================
-    private JPanel createMyReservationsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("My Reservations");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        String[] columns = {"Reservation ID", "Number", "Event", "Status"};
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
-        JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
-        
-        JButton refreshBtn = new JButton("Refresh");
-        JButton viewDetailsBtn = new JButton("View Details");
-        JButton cancelBtn = new JButton("Cancel Reservation");
-        
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(refreshBtn);
-        buttonPanel.add(viewDetailsBtn);
-        buttonPanel.add(cancelBtn);
-        
-        // Load reservations
-        refreshBtn.addActionListener(e -> {
-            model.setRowCount(0);
-            for (Reservation res : customerService.viewMyReservations()) {
-                model.addRow(new Object[]{
-                    res.getReservationId(),
-                    res.getReservationNumber(),
-                    res.getEventDetails().getTitle(),
-                    res.getStatus()
-                });
+        jScrollPane1.setViewportView(jTable1);
+
+        BookSelectedEventBtn.setText("Book Selected Event");
+        BookSelectedEventBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BookSelectedEventBtnActionPerformed(evt);
             }
         });
-        
-        // Initial load
-        refreshBtn.doClick();
-        
-        viewDetailsBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row >= 0) {
-                int resId = (int) model.getValueAt(row, 0);
-                Reservation res = customerService.viewReservation(resId);
-                if (res != null) {
-                    String details = "Reservation: " + res.getReservationNumber() + "\n"
-                            + "Event: " + res.getEventDetails().getTitle() + "\n"
-                            + "Location: " + res.getEventDetails().getLocation() + "\n"
-                            + "Status: " + res.getStatus() + "\n"
-                            + "Date: " + res.getDate();
-                    JOptionPane.showMessageDialog(this, details, "Reservation Details", 
-                        JOptionPane.INFORMATION_MESSAGE);
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Please select a reservation");
+
+        RefreshEventBtn.setText("Refresh");
+        RefreshEventBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RefreshEventBtnActionPerformed(evt);
             }
         });
-        
-        cancelBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row >= 0) {
-                int resId = (int) model.getValueAt(row, 0);
-                int confirm = JOptionPane.showConfirmDialog(this, 
-                    "Are you sure you want to cancel this reservation?", 
-                    "Confirm Cancellation", JOptionPane.YES_NO_OPTION);
-                
-                if (confirm == JOptionPane.YES_OPTION) {
-                    boolean success = customerService.cancelReservation(resId);
-                    if (success) {
-                        JOptionPane.showMessageDialog(this, "Reservation cancelled");
-                        refreshBtn.doClick();
-                    }
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Please select a reservation");
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 589, Short.MAX_VALUE))
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(196, 196, 196)
+                        .addComponent(BookSelectedEventBtn))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(RefreshEventBtn)))
+                .addGap(0, 0, Short.MAX_VALUE))
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 326, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(RefreshEventBtn)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
+                .addComponent(BookSelectedEventBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(38, 38, 38))
+        );
+
+        jTabbedPane1.addTab("book Event", jPanel2);
+
+        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Reservation ID", "Number", "Event", "Status"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.String.class, java.lang.Object.class, java.lang.Object.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
             }
         });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        return panel;
-    }
-    
-    // ============================================================================
-    // CONTACT PM PANEL
-    // ============================================================================
-    private JPanel createContactPMPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("Contact Project Manager");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        formPanel.add(new JLabel("PM ID:"), gbc);
-        
-        gbc.gridx = 1;
-        JTextField pmIdField = new JTextField(20);
-        formPanel.add(pmIdField, gbc);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        formPanel.add(new JLabel("Message:"), gbc);
-        
-        gbc.gridx = 1;
-        JTextArea messageArea = new JTextArea(5, 20);
-        JScrollPane msgScroll = new JScrollPane(messageArea);
-        formPanel.add(msgScroll, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        JButton sendBtn = new JButton("Send Message");
-        formPanel.add(sendBtn, gbc);
-        
-        sendBtn.addActionListener(e -> {
-            try {
-                int pmId = Integer.parseInt(pmIdField.getText().trim());
-                String message = messageArea.getText().trim();
-                
-                if (message.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Please enter a message");
-                    return;
-                }
-                
-                boolean success = customerService.contactPM(pmId, message);
+        jScrollPane2.setViewportView(jTable2);
+
+        cancelResBtn.setText("Cancel Reservation");
+        cancelResBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelResBtnActionPerformed(evt);
+            }
+        });
+
+        resRefreshBtn.setText("Refresh");
+        resRefreshBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resRefreshBtnActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 589, Short.MAX_VALUE))
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(195, 195, 195)
+                        .addComponent(cancelResBtn))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(resRefreshBtn)))
+                .addGap(0, 0, Short.MAX_VALUE))
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 398, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(resRefreshBtn)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 14, Short.MAX_VALUE)
+                .addComponent(cancelResBtn)
+                .addGap(34, 34, 34))
+        );
+
+        jTabbedPane1.addTab("My Reservations", jPanel3);
+
+        jLabel5.setText("PM ID");
+
+        jLabel6.setText("Message");
+
+        sendMessageBtn.setText("Send Message");
+        sendMessageBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                sendMessageBtnActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(95, 95, 95)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 61, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 220, Short.MAX_VALUE)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(PmIDField, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(messageField, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(24, 24, 24))
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(214, 214, 214)
+                .addComponent(sendMessageBtn)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(163, 163, 163)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(PmIDField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGap(95, 95, 95)
+                        .addComponent(jLabel6))
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGap(82, 82, 82)
+                        .addComponent(messageField, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 88, Short.MAX_VALUE)
+                .addComponent(sendMessageBtn)
+                .addGap(25, 25, 25))
+        );
+
+        jTabbedPane1.addTab("Contact PM", jPanel4);
+
+        jTable3.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Request ID", "Description", "Status", "Assigned To"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.String.class, java.lang.Object.class, java.lang.Object.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+        });
+        jScrollPane3.setViewportView(jTable3);
+
+        RefreshRequestsBtn.setText("Refresh");
+        RefreshRequestsBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RefreshRequestsBtnActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(RefreshRequestsBtn)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 595, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 342, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(38, 38, 38)
+                .addComponent(RefreshRequestsBtn)
+                .addContainerGap(95, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("My Requests", jPanel5);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addComponent(jTabbedPane1)
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jTabbedPane1)
+                .addContainerGap())
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void EventLocationFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EventLocationFieldActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_EventLocationFieldActionPerformed
+
+    private void CreateEventBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CreateEventBtnActionPerformed
+        try {
+            String title = EventTitleField2.getText().trim();
+            String location = EventLocationField.getText().trim();
+            int attendees = Integer.parseInt(AttendeesCountField.getText().trim());
+
+            if (title.isEmpty() || location.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all fields");
+                return;
+            }
+
+            com.project.eventmanagment.models.Event event
+                    = customerService.createEvent(title, location, attendees);
+
+            if (event != null) {
+                fileHandler.saveEvents(dataStore);
+                JOptionPane.showMessageDialog(this, "Event created successfully!");
+
+                EventTitleField2.setText("");
+                EventLocationField.setText("");
+                AttendeesCountField.setText("");
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid attendees count");
+        }
+    }//GEN-LAST:event_CreateEventBtnActionPerformed
+
+    private void BookSelectedEventBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BookSelectedEventBtnActionPerformed
+        int row = jTable1.getSelectedRow();
+
+        if (row >= 0) {
+            int eventId = (int) jTable1.getValueAt(row, 0);
+            com.project.eventmanagment.models.Event event = dataStore.findEventById(eventId);
+
+            Reservation res = customerService.bookEvent(event);
+            if (res != null) {
+                fileHandler.saveReservations(dataStore);
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Event booked successfully!\nReservation: "
+                        + res.getReservationNumber()
+                );
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select an event");
+        }
+    }//GEN-LAST:event_BookSelectedEventBtnActionPerformed
+
+    private void cancelResBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelResBtnActionPerformed
+        int row = jTable2.getSelectedRow();
+
+        if (row >= 0) {
+            int resId = (int) jTable2.getValueAt(row, 0);
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "Are you sure you want to cancel this reservation?",
+                    "Confirm Cancellation",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                boolean success
+                        = customerService.cancelReservation(resId);
+
                 if (success) {
-                    JOptionPane.showMessageDialog(this, "Message sent successfully");
-                    pmIdField.setText("");
-                    messageArea.setText("");
+                    fileHandler.saveReservations(dataStore);
+                    JOptionPane.showMessageDialog(this, "Reservation cancelled");
                 }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid PM ID");
             }
-        });
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(formPanel, BorderLayout.CENTER);
-        
-        return panel;
-    }
-    
-    // ============================================================================
-    // MY REQUESTS PANEL
-    // ============================================================================
-    private JPanel createMyRequestsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        JLabel title = new JLabel("My Service Requests");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        String[] columns = {"Request ID", "Description", "Status", "Assigned To"};
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
-        JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
-        
-        JButton refreshBtn = new JButton("Refresh");
-        
-        // Load requests
-        refreshBtn.addActionListener(e -> {
-            model.setRowCount(0);
-            for (ServiceRequest req : customerService.viewMyServiceRequests()) {
-                model.addRow(new Object[]{
-                    req.getRequestID(),
-                    req.getDescription(),
-                    req.getStatus(),
-                    req.getAssignedTo() != null ? req.getAssignedTo().getProviderName() : "Not assigned"
-                });
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select a reservation");
+        }
+    }//GEN-LAST:event_cancelResBtnActionPerformed
+
+    private void sendMessageBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sendMessageBtnActionPerformed
+        try {
+            int pmId = Integer.parseInt(PmIDField.getText().trim());
+            String message = messageField.getText().trim();
+
+            if (message.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter a message");
+                return;
             }
-        });
-        
-        // Initial load
-        refreshBtn.doClick();
-        
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(refreshBtn, BorderLayout.SOUTH);
-        
-        return panel;
+
+            boolean success
+                    = customerService.contactPM(pmId, message);
+
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Message sent successfully");
+                PmIDField.setText("");
+                messageField.setText("");
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid PM ID");
+        }
+    }//GEN-LAST:event_sendMessageBtnActionPerformed
+
+    private void RefreshEventBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RefreshEventBtnActionPerformed
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0); // clear table
+
+        for (com.project.eventmanagment.models.Event event : dataStore.getEvents()) {
+            model.addRow(new Object[]{
+                event.getEventId(),
+                event.getTitle(),
+                event.getLocation(),
+                event.getAttendeesCount()
+            });
+        }    }//GEN-LAST:event_RefreshEventBtnActionPerformed
+
+    private void RefreshRequestsBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RefreshRequestsBtnActionPerformed
+        DefaultTableModel model
+                = (DefaultTableModel) jTable3.getModel();
+
+        model.setRowCount(0);
+
+        for (ServiceRequest req
+                : customerService.viewMyServiceRequests()) {
+
+            model.addRow(new Object[]{
+                req.getRequestID(),
+                req.getDescription(),
+                req.getStatus(),
+                req.getAssignedTo() != null
+                ? req.getAssignedTo().getProviderName()
+                : "Not assigned"
+            });
+        }    }//GEN-LAST:event_RefreshRequestsBtnActionPerformed
+
+    private void refreshReservationsTable() {
+        DefaultTableModel model
+                = (DefaultTableModel) jTable2.getModel();
+
+        model.setRowCount(0); // clear table
+
+        for (Reservation res : customerService.viewMyReservations()) {
+            model.addRow(new Object[]{
+                res.getReservationId(),
+                res.getReservationNumber(),
+                res.getEventDetails().getTitle(),
+                res.getStatus()
+            });
+        }
     }
+
+
+    private void resRefreshBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resRefreshBtnActionPerformed
+        refreshReservationsTable();
+    }//GEN-LAST:event_resRefreshBtnActionPerformed
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> new CustomerMenu().setVisible(true));
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTextField AttendeesCountField;
+    private javax.swing.JButton BookSelectedEventBtn;
+    private javax.swing.JButton CreateEventBtn;
+    private javax.swing.JTextField EventLocationField;
+    private javax.swing.JTextField EventTitleField2;
+    private javax.swing.JTextField PmIDField;
+    private javax.swing.JButton RefreshEventBtn;
+    private javax.swing.JButton RefreshRequestsBtn;
+    private javax.swing.JButton cancelResBtn;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JTabbedPane jTabbedPane4;
+    private javax.swing.JTable jTable1;
+    private javax.swing.JTable jTable2;
+    private javax.swing.JTable jTable3;
+    private javax.swing.JTextField messageField;
+    private javax.swing.JButton resRefreshBtn;
+    private javax.swing.JButton sendMessageBtn;
+    // End of variables declaration//GEN-END:variables
 }
