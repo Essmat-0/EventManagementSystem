@@ -1,13 +1,13 @@
 package com.project.eventmanagment.data;
 
 public class IDGenerator {
-    
+
     private DataStore dataStore;
-    
+
     public IDGenerator(DataStore dataStore) {
         this.dataStore = dataStore;
     }
-    
+
     public int generateReservationID() {
         int maxId = 0;
         for (var r : dataStore.getReservations()) {
@@ -17,7 +17,7 @@ public class IDGenerator {
         }
         return maxId + 1;
     }
-    
+
     public int generateOfferID() {
         int maxId = 0;
         for (var o : dataStore.getOffers()) {
@@ -27,7 +27,7 @@ public class IDGenerator {
         }
         return maxId + 1;
     }
-    
+
     public int generateBillID() {
         int maxId = 0;
         for (var b : dataStore.getBills()) {
@@ -37,11 +37,11 @@ public class IDGenerator {
         }
         return maxId + 1;
     }
-    
+
     public int generateNotificationID() {
-        return (int)(System.currentTimeMillis() % 100000);
+        return (int) (System.currentTimeMillis() % 100000);
     }
-    
+
     public int generateRequestID() {
         int maxId = 0;
         for (var r : dataStore.getRequests()) {
@@ -51,4 +51,15 @@ public class IDGenerator {
         }
         return maxId + 1;
     }
+    public int generateEventID() {
+        int maxId = 0;
+        for (var r : dataStore.getEvents()) {
+            if (r.getEventId()> maxId) {
+                maxId = r.getEventId();
+            }
+        }
+        return ++maxId;
+    }
+
+
 }

@@ -10,16 +10,21 @@ public class Event {
     private int attendeesCount;
     private String location;
     private LocalDateTime date;
+    private Customer createdBy;
+
     
     
-    
-    public Event(){}
-    public Event(int eventId,String title, String notes, int attendeesCount) {
-        this.eventId = eventId;
-        this.title = title;
-        this.notes = notes;
-        this.attendeesCount = attendeesCount;
-    }
+  public Event(int eventId, String title, String location, int attendeesCount, Customer createdBy) {
+    this.eventId = eventId;
+    this.title = title;
+    this.location = location;
+    this.attendeesCount = attendeesCount;
+    this.createdBy = createdBy;
+}
+
+public Customer getCreatedBy() {
+    return createdBy;
+}
 
     
     

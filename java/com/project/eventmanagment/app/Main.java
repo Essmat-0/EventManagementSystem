@@ -7,6 +7,7 @@ import com.project.eventmanagment.models.*;
 import com.project.eventmanagment.models.enums.ReservationStatus;
 import com.project.eventmanagment.services.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 public class Main {
     
@@ -66,11 +67,7 @@ public class Main {
         ServiceProvider provider = new ServiceProvider(4, "Best Catering Co", "catering@email.com", "444", "prov123");
         dataStore.getProviders().add(provider);
         
-        // Create Events
-        Event event1 = new Event(1, "Wedding Ceremony", "Grand Hotel", 150);
-        Event event2 = new Event(2, "Corporate Meeting", "Business Center", 50);
-        dataStore.getEvents().add(event1);
-        dataStore.getEvents().add(event2);
+        
     }
     
     private static void testLogin(DataStore dataStore) {
@@ -109,56 +106,74 @@ public class Main {
     }
     
     private static void testCustomerFlow(DataStore dataStore, IDGenerator idGen) {
-        System.out.println("========================================");
-        System.out.println("TEST 2: CUSTOMER FLOW");
-        System.out.println("========================================");
-        
-        Customer customer = dataStore.getCustomers().get(0);
-        ReservationService resService = new ReservationService(dataStore, idGen);
-        CustomerService custService = new CustomerService(dataStore, resService, idGen, customer);
-        
-        // Test 1: View Events
-        System.out.println("Available events: " + custService.viewAllEvents().size());
-        if (custService.viewAllEvents().size() == 2) {
-            System.out.println("✓ View events works");
-        } else {
-            System.out.println("✗ View events FAILED");
-        }
-        
-        // Test 2: Book Event
-        Event event = dataStore.getEvents().get(0);
-        Reservation reservation = custService.bookEvent(event);
-        if (reservation != null) {
-            System.out.println("✓ Booking created: " + reservation.getReservationNumber());
-        } else {
-            System.out.println("✗ Booking FAILED");
-        }
-        
-        // Test 3: View My Reservations
-        if (custService.viewMyReservations().size() == 1) {
-            System.out.println("✓ View reservations works");
-        } else {
-            System.out.println("✗ View reservations FAILED");
-        }
-        
-        // Test 4: View Specific Reservation
-        Reservation found = custService.viewReservation(reservation.getReservationId());
-        if (found != null) {
-            System.out.println("✓ View specific reservation works");
-        } else {
-            System.out.println("✗ View specific reservation FAILED");
-        }
-        
-        // Test 5: Cancel Reservation
-        boolean cancelled = custService.cancelReservation(reservation.getReservationId());
-        if (cancelled && reservation.getStatus() == ReservationStatus.CANCELED) {
-            System.out.println("✓ Cancel reservation works");
-        } else {
-            System.out.println("✗ Cancel reservation FAILED");
-        }
-        
-        System.out.println();
+    System.out.println("========================================");
+    System.out.println("TEST X: CUSTOMER CREATE EVENT + SEND TO PM");
+    System.out.println("========================================");
+
+    // Assume at least one customer & one PM already exist
+    Customer customer = dataStore.getCustomers().get(0);
+    ProjectManager pm = dataStore.getPms().get(0);
+
+    ReservationService resService = new ReservationService(dataStore, idGen);
+    CustomerService custService = new CustomerService(dataStore, resService, idGen, customer);
+    ServiceRequestService reqService = new ServiceRequestService(dataStore, idGen);
+
+    // Test 1: Customer creates event
+    Event event = custService.createEvent(
+            "Birthday Party",
+            "City Hall",
+            80
+    );
+
+    if (event != null) {
+        System.out.println("✓ Event created: " + event.getTitle());
+    } else {
+        System.out.println("✗ Event creation FAILED");
+        return;
     }
+
+    // Test 2: Customer books the event
+    Reservation reservation = custService.bookEvent(event);
+    if (reservation != null) {
+        System.out.println("✓ Reservation created: " + reservation.getReservationNumber());
+    } else {
+        System.out.println("✗ Reservation FAILED");
+        return;
+    }
+
+    // Test 3: Customer creates service request
+    ServiceRequest request = reqService.createRequest(
+            "BLAH BLAH BLAH",
+            dataStore.findReservationById(reservation.getReservationId()),
+            dataStore.findCustomerById(customer.getId()),
+            dataStore.findPMById(pm.getId())
+    );
+
+    if (request != null) {
+        System.out.println("✓ Service request created");
+    } else {
+        System.out.println("✗ Service request FAILED");
+        return;
+    }
+
+    // Test 4: Admin / system assigns request to PM
+    request.setPm(pm);
+
+    System.out.println("✓ Request assigned to PM: " + pm.getName());
+
+    // Test 5: PM sees the request
+    PMService pmService = new PMService(dataStore, reqService);
+    ArrayList<ServiceRequest> pmRequests = pmService.getRequestsForPM(pm);
+
+    if (!pmRequests.isEmpty()) {
+        System.out.println("✓ PM received request");
+    } else {
+        System.out.println("✗ PM did not receive request");
+    }
+
+    System.out.println();
+}
+
     
     private static void testAdminFlow(DataStore dataStore, FileHandler fileHandler) {
         System.out.println("========================================");

@@ -142,40 +142,55 @@ public class FileHandler {
     // =============================================================================
     // EVENTS
     // =============================================================================
-    public void saveEvents(DataStore ds) {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(EVENTS_FILE))) {
-            for (Event e : ds.getEvents()) {
-                pw.println(
-                        e.getEventId() + "|"
-                        + e.getTitle() + "|"
-                        + e.getLocation() + "|"
-                        + e.getAttendeesCount()
-                );
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+public void saveEvents(DataStore ds) {
+    try (PrintWriter pw = new PrintWriter(new FileWriter(EVENTS_FILE))) {
+        for (Event e : ds.getEvents()) {
+            pw.println(
+                    e.getEventId() + "|"
+                  + e.getTitle() + "|"
+                  + e.getLocation() + "|"
+                  + e.getAttendeesCount()+ "|"
+                  + (e.getCreatedBy() != null ? e.getCreatedBy().getId() : -1)
+            );
         }
+    } catch (IOException e) {
+        e.printStackTrace();
     }
+}
+
 
     public void loadEvents(DataStore ds) {
-        try (BufferedReader br = new BufferedReader(new FileReader(EVENTS_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] p = line.split("\\|");
+    try (BufferedReader br = new BufferedReader(new FileReader(EVENTS_FILE))) {
+        String line;
+        while ((line = br.readLine()) != null) {
+            String[] p = line.split("\\|");
 
-                Event e = new Event(
-                        Integer.parseInt(p[0]),
-                        p[1],
-                        p[2],
-                        Integer.parseInt(p[3])
-                );
+            int eventId = Integer.parseInt(p[0]);
+            String title = p[1];
+            String location = p[2];
+            int attendeesCount = Integer.parseInt(p[3]);
+            int customerId = Integer.parseInt(p[4]);
 
-                ds.getEvents().add(e);
+            Customer creator = null;
+            if (customerId != -1) {
+                creator = ds.findCustomerById(customerId);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            Event e = new Event(
+                    eventId,
+                    title,
+                    location,
+                    attendeesCount,
+                    creator
+            );
+
+            ds.getEvents().add(e);
         }
+    } catch (IOException e) {
+        e.printStackTrace();
     }
+}
+
     // =============================================================================
     // RESERVATIONS
     // =============================================================================

@@ -20,7 +20,7 @@ public class ServiceRequestService {
 
     public ServiceRequest createRequest(String description, Reservation reservation, Customer customer, ProjectManager pm) {
         if (reservation == null || customer == null) {
-            throw new IllegalArgumentException("Reservation and customer must not be null");
+            return null;
         }
 
         int id = idGen.generateReservationID();
